@@ -17,7 +17,6 @@ namespace AzureChat
         {
             kernel = new StandardKernel();
             kernel.Bind<IValidator<UserViewModel>>().To<UserValidator>();
-            kernel.Bind<IValidator<MessageViewModel>>().To<MessageValidator>();
         }
 
         public override IValidator CreateInstance(Type validatorType)

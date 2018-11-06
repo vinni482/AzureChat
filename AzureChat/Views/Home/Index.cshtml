@@ -3,12 +3,11 @@
 }
 
 <div class="container" style="margin-top: 20px;">
-    <input type="hidden" id="displayname" />
     <div class="row">
-        <div class="col-md-2" style="height: 100%; padding: 0;">
+        <div class="col-md-3" style="height: 100%;">
             <div class="panel panel-primary">
                 <div class="panel-heading">
-                    <span class="glyphicon glyphicon-user"></span> Online
+                    <span class="glyphicon glyphicon-user"></span> Online <span id="usersCount"></span>
                 </div>
                 <div>
                     <div class="panel-body">
@@ -17,7 +16,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-10">
+        <div class="col-md-9">
             <div class="panel panel-primary">
                 <div class="panel-heading" id="accordion">
                     <span class="glyphicon glyphicon-comment"></span> Chat
@@ -27,14 +26,17 @@
                         <ul class="chat" id="discussion"></ul>
                     </div>
                     <div class="panel-footer">
-                        <div class="input-group">
-                            <input id="message" type="text" class="form-control input-sm" placeholder="Type your message here..." />
-                            <span class="input-group-btn">
-                                <button class="btn btn-warning btn-sm" id="sendmessage">
-                                    Send
-                                </button>
-                            </span>
-                        </div>
+                        @using (Html.BeginForm(null, null, FormMethod.Post, new { id = "sendMessageForm" }))
+                        {
+                            <div class="input-group">
+                                <input id="message" type="text" class="form-control input-sm" placeholder="Type your message here..." maxlength="500" />
+                                <span class="input-group-btn">
+                                    <button type="submit" class="btn btn-warning btn-sm" id="sendmessage">
+                                        Send
+                                    </button>
+                                </span>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -42,7 +44,7 @@
     </div>
 </div>
 
-@Html.Partial("_EnterNameModal")
+@Html.Partial("_LoginModal")
 
 @section Styles {
     <link href="~/Content/Chat.css" rel="stylesheet" type="text/css" />
@@ -59,6 +61,8 @@
                     AddUser(allUsers[i].ConnectionId, allUsers[i].UserName);
                 }
 
+                $('#usersCount').html(allUsers.length);
+
                 // Send latest messages for connected user
                 for (i = 0; i < messages.length; i++) {
                     AddMessage(messages[i].UserName, messages[i].Message, messages[i].Time);
@@ -66,13 +70,15 @@
             }
 
             // On New User Connected Broadcast
-            chatHub.client.onNewUserConnected = function (connectionId, userName) {
+            chatHub.client.onNewUserConnected = function (connectionId, userName, usersCount) {
                 AddUser(connectionId, userName);
+                $('#usersCount').html(usersCount);
             }
 
             // On User Disconnected Broadcast
-            chatHub.client.onUserDisconnected = function (connectionId) {
+            chatHub.client.onUserDisconnected = function (connectionId, usersCount) {
                 $('#' + connectionId).remove();
+                $('#usersCount').html(usersCount);
             }
 
             chatHub.client.broadcastMessage = function (userName, message, datetime) {
@@ -80,17 +86,21 @@
             };
         }
 
-        function connectUser(chatHub) {
-            var UserName = $("#displayname").val();
-            chatHub.server.connect(UserName).
+        function connectUser(chatHub, userName) {
+            chatHub.server.connect(userName).
                 done(function (result) {
-                    if (result == @((byte)Enums.ErrorCodes.DuplicateName))
-                        alert('Duplicate Name');
-                    else if (result == @((byte)Enums.ErrorCodes.ServerValidationFailed))
-                        alert('Server validation failed');
+                    if (result == @((byte)Enums.ErrorCodes.DuplicateName)){
+                        swal("Duplicate name", "User with the same name is already in the chat. User Name must be unique.", "error", { button: "OK" });
+                    }
+                    else if (result == @((byte)Enums.ErrorCodes.ServerValidationFailed)){
+                        swal("Server validation failed", "Your username is not valid.", "error", { button: "OK" });
+                    }
+                    else if (result == @((byte)Enums.ErrorCodes.NoErrors)){
+                        $('#loginModal').modal('toggle');
+                    }
                 }).
                 fail(function (error) {
-                    alert(error);
+                    swal("Error", error, "error", { button: "OK" });
                 });
         }
 
@@ -122,34 +132,33 @@
             var chatHub = $.connection.chatHub;
             registerClientMethods(chatHub);
 
-            $('#displayname').val(prompt('Enter your name:', ''));
-
             $.connection.hub.start().done(function () {
-                connectUser(chatHub);
+                $('#loginModal').modal({
+                    backdrop: 'static',
+                    keyboard: false
+                });
 
-                $('#sendmessage').click(function () {
-                    chatHub.server.send($('#message').val()).
-                        done(function (result) {
-                            //if (result == 0)
-                            //    alert('UserName can not be empty');
-                        }).
-                        fail(function (error) {
-                            alert(error);
-                        });
+                $('#modalForm').submit(function () {
+                    event.preventDefault();
+                    if ($(this).valid()) {
+                        connectUser(chatHub, $('#displayName').val());
+                    }
+                });
+
+                $('#sendMessageForm').submit(function () {
+                    event.preventDefault();
+                    if ($(this).valid()) {
+                        chatHub.server.send($('#message').val()).
+                            fail(function (error) {
+                                swal("Error", error, "error", { button: "OK" });
+                            });
+                    }
                     $('#message').val('').focus();
                 });
-            }).fail(function (error) {
-                    alert(error);
+            })
+                .fail(function (error) {
+                    swal("Error", error, "error", { button: "OK" });
                 });
-
-            
-
-            //$('#exampleModalCenter').modal({
-            //    backdrop: 'static',
-            //    keyboard: false
-            //});
-
-            
         });
     </script>
 }

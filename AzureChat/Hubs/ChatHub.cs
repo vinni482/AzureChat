@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 using AzureChat.Models;
 using Enums;
 using Microsoft.AspNet.SignalR;
@@ -36,15 +35,13 @@ namespace AzureChat.Hubs
 
             UserModel currentUser = connectedUsers.Where(u => u.ConnectionId == id).FirstOrDefault();
             Clients.Caller.onConnected(currentUser.UserName, connectedUsers, latestMessages);
-            Clients.AllExcept(currentUser.ConnectionId).onNewUserConnected(currentUser.ConnectionId, currentUser.UserName);
+            Clients.AllExcept(currentUser.ConnectionId).onNewUserConnected(currentUser.ConnectionId, currentUser.UserName, connectedUsers.Count);
 
             return ErrorCodes.NoErrors;
         }
         
-        public ErrorCodes Send(string message)
+        public void Send(string message)
         {
-            //if (!new MessageValidator().Validate(message).IsValid)
-            //    return ErrorCodes.ServerValidationFailed; //in case if client validation has been broken
             var user = connectedUsers.Where(x => x.ConnectionId == Context.ConnectionId).FirstOrDefault();
             if (user == null)
                 throw new Exception("Some error happened");
@@ -57,7 +54,6 @@ namespace AzureChat.Hubs
             };
             Clients.All.broadcastMessage(messageModel.UserName, messageModel.Message, messageModel.Time);
             AddMessageInCache(messageModel);
-            return ErrorCodes.NoErrors;
         }
 
         public override System.Threading.Tasks.Task OnDisconnected(bool stopCalled)
@@ -69,7 +65,7 @@ namespace AzureChat.Hubs
                 connectedUsers.Remove(item);
                 if (!connectedUsers.Any(u => u.ConnectionId == item.ConnectionId))
                 {
-                    Clients.All.onUserDisconnected(item.ConnectionId);
+                    Clients.All.onUserDisconnected(item.ConnectionId, connectedUsers.Count);
                 }
             }
             return base.OnDisconnected(stopCalled);
