@@ -36,7 +36,7 @@ namespace AzureChat.Hubs
 
             UserModel currentUser = connectedUsers.Where(u => u.ConnectionId == id).FirstOrDefault();
             Clients.Caller.onConnected(currentUser.UserName, connectedUsers, latestMessages);
-            Clients.AllExcept(currentUser.ConnectionId).onNewUserConnected(currentUser.UserName);
+            Clients.AllExcept(currentUser.ConnectionId).onNewUserConnected(currentUser.ConnectionId, currentUser.UserName);
 
             return ErrorCodes.NoErrors;
         }
@@ -69,7 +69,7 @@ namespace AzureChat.Hubs
                 connectedUsers.Remove(item);
                 if (!connectedUsers.Any(u => u.ConnectionId == item.ConnectionId))
                 {
-                    Clients.All.onUserDisconnected(item.UserName);
+                    Clients.All.onUserDisconnected(item.ConnectionId);
                 }
             }
             return base.OnDisconnected(stopCalled);

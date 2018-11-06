@@ -56,7 +56,7 @@
             chatHub.client.onConnected = function (userName, allUsers, messages) {
                 // Send list of online users for connected user
                 for (i = 0; i < allUsers.length; i++) {
-                    AddUser(allUsers[i].UserName);
+                    AddUser(allUsers[i].ConnectionId, allUsers[i].UserName);
                 }
 
                 // Send latest messages for connected user
@@ -66,13 +66,13 @@
             }
 
             // On New User Connected Broadcast
-            chatHub.client.onNewUserConnected = function (userName) {
-                AddUser(userName);
+            chatHub.client.onNewUserConnected = function (connectionId, userName) {
+                AddUser(connectionId, userName);
             }
 
             // On User Disconnected Broadcast
-            chatHub.client.onUserDisconnected = function (userName) {
-                $('#' + userName).remove();
+            chatHub.client.onUserDisconnected = function (connectionId) {
+                $('#' + connectionId).remove();
             }
 
             chatHub.client.broadcastMessage = function (userName, message, datetime) {
@@ -94,8 +94,8 @@
                 });
         }
 
-        function AddUser(userName) {
-            var item = "<li id='" + userName + "'>" + userName + "</li>";
+        function AddUser(connectionId, userName) {
+            var item = "<li id='" + connectionId + "'>" + userName + "</li>";
             $("#users").append(item);
         }
 
