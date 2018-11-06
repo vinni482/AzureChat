@@ -11,7 +11,7 @@ namespace AzureChat
     {
         public void Configuration(IAppBuilder app)
         {
-            app.MapSignalR();
+            app.MapAzureSignalR(this.GetType().FullName);
         }
     }
 }
