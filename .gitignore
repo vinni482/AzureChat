@@ -6,3 +6,10 @@
 /AzureChat/obj/Debug
 /AzureChat/bin
 /.vs
+/Enums/bin/Debug/netstandard2.0
+/Enums/obj/Debug/netstandard2.0
+/Enums/obj
+/Validators/bin/Debug
+/Validators/obj/Debug
+/ViewModels/bin/Debug
+/ViewModels/obj/Debug

@@ -1,0 +1,22 @@
+﻿@model ViewModels.Home.UserViewModel
+
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+                <h4 class="modal-title w-100 font-weight-bold" id="exampleModalLongTitle">Log In</h4>
+            </div>
+            @using (Html.BeginForm(null, null, FormMethod.Post, new { id = "modalForm" }))
+            {
+                <div class="modal-body">
+                    @Html.Label("Enter your name:")
+                    @Html.TextBoxFor(x => x.UserName, new { @class = "form-control" })
+                    @Html.ValidationMessageFor(x => x.UserName)
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">OK</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>

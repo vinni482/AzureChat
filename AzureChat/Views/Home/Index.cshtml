@@ -2,17 +2,27 @@
     ViewBag.Title = "Home Page";
 }
 
-<br />
-
-<div class="container">
+<div class="container" style="margin-top: 20px;">
     <input type="hidden" id="displayname" />
     <div class="row">
-        <div class="col-md-12">
+        <div class="col-md-2" style="height: 100%; padding: 0;">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <span class="glyphicon glyphicon-user"></span> Online
+                </div>
+                <div>
+                    <div class="panel-body">
+                        <ul class="chat" id="users"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-10">
             <div class="panel panel-primary">
                 <div class="panel-heading" id="accordion">
                     <span class="glyphicon glyphicon-comment"></span> Chat
                 </div>
-                <div >
+                <div>
                     <div class="panel-body">
                         <ul class="chat" id="discussion"></ul>
                     </div>
@@ -32,6 +42,8 @@
     </div>
 </div>
 
+@Html.Partial("_EnterNameModal")
+
 @section Styles {
     <link href="~/Content/Chat.css" rel="stylesheet" type="text/css" />
 }
@@ -40,33 +52,104 @@
     <script src="~/Scripts/jquery.signalR-2.4.0-preview1-20180920-03.js"></script>
     <script src="~/signalr/hubs"></script>
     <script type="text/javascript">
-        $(function () {
-            var chat = $.connection.chatHub;
-            chat.client.broadcastMessage = function (name, message) {
-                var currentdate = new Date();
-                var encodedName = $('<div />').text(name).html();
-                var encodedMsg = $('<div />').text(message).html();
-                $('#discussion').append('<li class="left clearfix">' +
-                    '<div class="chat-body clearfix">' +
-                    '<div class="header">' +
-                    '<strong class="primary-font">' + encodedName + '</strong> <small class="pull-right text-muted">' +
-                    '<span class="glyphicon glyphicon-time"></span>' + currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds() +
-                    '</small>' +
-                    '</div>' +
-                    '<p>' + encodedMsg +
-                    '</p>' +
-                    '</div>' +
-                    '</li>');
+        function registerClientMethods(chatHub) {
+            chatHub.client.onConnected = function (userName, allUsers, messages) {
+                // Send list of online users for connected user
+                for (i = 0; i < allUsers.length; i++) {
+                    AddUser(allUsers[i].UserName);
+                }
+
+                // Send latest messages for connected user
+                for (i = 0; i < messages.length; i++) {
+                    AddMessage(messages[i].UserName, messages[i].Message, messages[i].Time);
+                }
+            }
+
+            // On New User Connected Broadcast
+            chatHub.client.onNewUserConnected = function (userName) {
+                AddUser(userName);
+            }
+
+            // On User Disconnected Broadcast
+            chatHub.client.onUserDisconnected = function (userName) {
+                $('#' + userName).remove();
+            }
+
+            chatHub.client.broadcastMessage = function (userName, message, datetime) {
+                AddMessage(userName, message, datetime);
             };
+        }
+
+        function connectUser(chatHub) {
+            var UserName = $("#displayname").val();
+            chatHub.server.connect(UserName).
+                done(function (result) {
+                    if (result == @((byte)Enums.ErrorCodes.DuplicateName))
+                        alert('Duplicate Name');
+                    else if (result == @((byte)Enums.ErrorCodes.ServerValidationFailed))
+                        alert('Server validation failed');
+                }).
+                fail(function (error) {
+                    alert(error);
+                });
+        }
+
+        function AddUser(userName) {
+            var item = "<li id='" + userName + "'>" + userName + "</li>";
+            $("#users").append(item);
+        }
+
+        function AddMessage(userName, message, datetime) {
+            var encodedName = $('<div />').text(userName).html();
+            var encodedMsg = $('<div />').text(message).html();
+            var datetimeLocal = new Date(datetime).toLocaleString();
+            $('#discussion').append('<li class="left clearfix">' +
+                '<div class="chat-body clearfix">' +
+                '<div class="header">' +
+                '<strong class="primary-font">' + encodedName + '</strong> <small class="pull-right text-muted">' +
+                '<span class="glyphicon glyphicon-time"></span>' + datetimeLocal +
+                '</small>' +
+                '</div>' +
+                '<p>' + encodedMsg +
+                '</p>' +
+                '</div>' +
+                '</li>');
+            $('#discussion')[0].lastChild.scrollIntoView();
+            $('#message').focus();
+        }
+
+        $(document).ready(function() {
+            var chatHub = $.connection.chatHub;
+            registerClientMethods(chatHub);
 
             $('#displayname').val(prompt('Enter your name:', ''));
-            $('#message').focus();
+
             $.connection.hub.start().done(function () {
+                connectUser(chatHub);
+
                 $('#sendmessage').click(function () {
-                    chat.server.send($('#displayname').val(), $('#message').val());
+                    chatHub.server.send($('#message').val()).
+                        done(function (result) {
+                            //if (result == 0)
+                            //    alert('UserName can not be empty');
+                        }).
+                        fail(function (error) {
+                            alert(error);
+                        });
                     $('#message').val('').focus();
                 });
-            });
+            }).fail(function (error) {
+                    alert(error);
+                });
+
+            
+
+            //$('#exampleModalCenter').modal({
+            //    backdrop: 'static',
+            //    keyboard: false
+            //});
+
+            
         });
     </script>
 }

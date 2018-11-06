@@ -13,6 +13,11 @@ namespace AzureChat
         protected void Application_Start()
         {
             AreaRegistration.RegisterAllAreas();
+
+            // set up the custom validator factory so the client side validation knows where to get the validation
+            FluentValidation.Mvc.FluentValidationModelValidatorProvider.Configure(
+               provider => { provider.ValidatorFactory = new ValidatorFactory(); });
+
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
